@@ -1,0 +1,80 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+contract VotingSystem {
+    struct Candidate {
+        string name;
+        uint voteCount;
+    }
+
+    mapping(address => bool) public hasVoted;
+    mapping(uint => Candidate) public candidates;
+    uint public candidateCount;
+    address public admin;
+    bool public votingEnded;
+    
+    event VoteCasted(address indexed voter, uint indexed candidateId);
+    event VotingEnded(uint winningCandidateId, string winningCandidateName, uint winningVoteCount);
+
+    constructor() {
+        admin = msg.sender;
+        // Initialize candidates (you can add more candidates as needed)
+        candidates[1] = Candidate("Siddhi", 0);
+        candidates[2] = Candidate("Jagriti", 0);
+        candidates[3] = Candidate("Himesh", 0);
+        candidates[4] = Candidate("Shubh", 0);
+        candidates[5] = Candidate("Yogesh", 0);
+        candidateCount = 5;
+        votingEnded = false;
+    }
+
+    function vote(uint candidateId) public {
+        require(!votingEnded, "Voting has ended.");
+        require(!hasVoted[msg.sender], "You have already voted.");
+        require(candidateId > 0 && candidateId <= candidateCount, "Invalid candidate ID.");
+
+        hasVoted[msg.sender] = true;
+        candidates[candidateId].voteCount += 1;
+
+        emit VoteCasted(msg.sender, candidateId);
+    }
+
+    function endVoting() public {
+        require(msg.sender == admin, "Only admin can end voting.");
+        require(!votingEnded, "Voting has already ended.");
+
+        votingEnded = true;
+        uint winningCandidateId = 0;
+        uint winningVoteCount = 0;
+
+        for (uint i = 1; i <= candidateCount; i++) {
+            if (candidates[i].voteCount > winningVoteCount) {
+                winningVoteCount = candidates[i].voteCount;
+                winningCandidateId = i;
+            }
+        }
+
+        emit VotingEnded(winningCandidateId, candidates[winningCandidateId].name, winningVoteCount);
+    }
+
+    function getCandidate(uint candidateId) public view returns (string memory, uint) {
+        require(candidateId > 0 && candidateId <= candidateCount, "Invalid candidate ID.");
+        Candidate memory candidate = candidates[candidateId];
+        return (candidate.name, candidate.voteCount);
+    }
+
+    function getWinner() public view returns (string memory) {
+        require(votingEnded, "Voting is still ongoing.");
+        uint winningCandidateId = 0;
+        uint winningVoteCount = 0;
+
+        for (uint i = 1; i <= candidateCount; i++) {
+            if (candidates[i].voteCount > winningVoteCount) {
+                winningVoteCount = candidates[i].voteCount;
+                winningCandidateId = i;
+            }
+        }
+
+        return candidates[winningCandidateId].name;
+    }
+}
